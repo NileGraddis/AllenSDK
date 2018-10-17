@@ -1,9 +1,12 @@
+import logging
+import itertools as it
 
 import requests
 
 from allensdk.core.multi_source_argschema_parser import MultiSourceArgschemaParser
 
 from ._schemas import InputParameters, OutputParameters
+from ._unionize import field
 
 
 def clean_multiline_string(string, sep=' '):
@@ -42,17 +45,58 @@ def get_inputs_from_lims(args):
         object_class=ImageSeries&
         object_id={}&
         job_queue_name={}
-    ''', sep='')
+    '''.format(host, image_series_id, job_queue_name), sep='')
 
     response = requests.get(query_url)
     data = response.json()
-
     return data
+
+
+# TODO: move this - or just use registered class names
+FIELD_MAP = {
+    'sum_pixels': field.SumPixelsField,
+    'sum_projecting_pixels': field.SumProjectingPixelsField,
+    'projection_density': field.ProjectionDensityField
+}
 
 
 def run_unionize(args):
 
-    pass
+    args['requested_fields'] = ['sum_pixels', 'sum_projecting_pixels', 'projection_density'] # TODO this is a placeholder
+
+    # setup fields
+    fields = {}
+    interval_requirements = {} # TODO: gotta flip these
+    field_requirements = {}
+
+    key_iter = it.product(args['structures'], args['hemisphere_ids'], (True, False), args['requested_fields'])
+    for structure, hemisphere_id, injection_status, requested_field in key_iter:
+        key = field.Key(structure['id'], hemisphere_id, injection_status, requested_field)
+        fields[key] = FIELD_MAP[requested_field](key)
+
+        field_requirements[key] = fields[key].required_fields
+        interval_requirements[key] = fields[key].required_intervals
+
+    print(interval_requirements)
+    print(field_requirements)
+
+    # setup field dependency queues
+
+    # set constant fields
+
+    # load interval data
+
+    # fill interval fields
+
+    # drop interval data
+
+    # field loop
+
+    # propagate fields
+
+    # organize unionizes
+
+    return {}
 
 
 def main():
@@ -72,7 +116,7 @@ def main():
         output_schema_type=OutputParameters
     )
 
-    outputs = run_unionize(mod.args)
+    output = run_unionize(mod.args)
     MultiSourceArgschemaParser.write_or_print_outputs(output, mod)
 
 
