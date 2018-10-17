@@ -2,6 +2,8 @@
 from argschema.schemas import ArgSchema, DefaultSchema
 from argschema.fields import Nested, Dict, String, Int, Float, List
 
+from ._unionize import cases
+
 
 class Structure(DefaultSchema):
     id = Int(required=True, help='unique identifier for this structure')
@@ -19,6 +21,7 @@ class InputParameters(ArgSchema):
     reference_spacing = Float(required=True, help='Isometric resolution in microns of the reference space')
     reference_shape = List(Int, required=True, help='3-long array whose values are the length of each axis of the reference volume')
     image_resolution = Float(required=True, help='The side-length (microns) of each pixel in the acquired image.')
+    case = String(default='classic', validator=lambda key: key in cases, help='the variety of unionizes to calculate.')
 
 
 class OutputParameters(DefaultSchema):
