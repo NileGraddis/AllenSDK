@@ -289,8 +289,16 @@ def test_get_reconstruction_exception(to_csv,
                                       cell_id):
     ctc = cache_fixture
 
-    reconstruction_data = [{'neuron_reconstructions': [
-                            {'well_known_files': None}]}]
+    reconstruction_data = [
+        {
+            'neuron_reconstructions': [
+                {
+                    'well_known_files': [],
+                    'id': 12345
+                }
+            ]
+        }
+    ]
 
     with pytest.raises(Exception) as exc:
         with patch.object(ctc, "get_cache_path", return_value=_MOCK_PATH):
@@ -303,7 +311,7 @@ def test_get_reconstruction_exception(to_csv,
                             with patch('allensdk.config.manifest.Manifest.safe_make_parent_dirs'):
                                 _ = ctc.get_reconstruction(cell_id)
 
-    assert 'has no reconstruction' in str(exc.value)
+    assert 'No downloadable file' in str(exc.value)
 
 
 @pytest.mark.parametrize('path_exists,lookup_error',

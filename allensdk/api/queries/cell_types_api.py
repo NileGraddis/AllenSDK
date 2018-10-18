@@ -335,7 +335,7 @@ class CellTypesApi(RmaApi):
 
         self.retrieve_file_over_http(self.api_url + file_url, file_name)
 
-    def save_reconstruction(self, specimen_id, file_name):
+    def save_reconstruction(self, specimen_id, file_name, neuron_reconstruction_id=None):
         """
         Save the morphological reconstruction of a cell as an SWC file.
 
@@ -343,6 +343,9 @@ class CellTypesApi(RmaApi):
         ----------
         specimen_id: int
             ID of the specimen, from the Specimens database model in the Allen Institute API.
+        neuron_reconstruction_id : int, optional
+            If specified, this method will search for a reconstrution with the specified id 
+            (this overrides the generic prohibition on superseded reconstructions)
 
         file_name: str
             Path to save the SWC file.
@@ -351,18 +354,32 @@ class CellTypesApi(RmaApi):
         Manifest.safe_make_parent_dirs(file_name)
 
         criteria = '[id$eq%d],neuron_reconstructions(well_known_files)' % specimen_id
+        if neuron_reconstruction_id is None:
+            criteria = '%s,neuron_reconstructions[superseded$eq\'false\']' % criteria
+        else:
+            criteria = '%s,neuron_reconstruction[id$eq%d]' % (criteria, neuron_reconstruction_id)
         includes = 'neuron_reconstructions(well_known_files(well_known_file_type[name$eq\'%s\']))' % self.SWC_FILE_TYPE
 
-        results = self.model_query('Specimen',
-                                   criteria=criteria,
-                                   include=includes,
-                                   num_rows='all')
+        results = self.model_query('Specimen', criteria=criteria, include=includes, num_rows='all')
+
+        if len(results) != 1:
+            raise ValueError(
+                'expected to find 1 matching specimen, instead found %d with ids: %s' % (len(results), ','.join([str(sp['id']) for sp in results]))
+                )
+        reconstructions = results[0]['neuron_reconstructions']
+
+        if len(reconstructions) != 1:
+            raise ValueError(
+                'expected to find 1 neuron reconstruction for specimen %d, instead found %d with ids: %s' \
+                % (specimen_id, len(reconstructions), ','.join([str(rc['id']) for rc in reconstructions]))
+                )
+        reconstruction = reconstructions[0]
 
         try:
-            file_url = results[0]['neuron_reconstructions'][
-                0]['well_known_files'][0]['download_link']
-        except:
-            raise Exception("Specimen %d has no reconstruction" % specimen_id)
+            file_url = reconstruction['well_known_files'][0]['download_link']
+        except (IndexError, KeyError) as err:
+            # pass
+            raise ValueError("No downloadable file is associated with specimen %d and neuron reconstruction %d" % (specimen_id, reconstruction['id']))
 
         self.retrieve_file_over_http(self.api_url + file_url, file_name)
 
