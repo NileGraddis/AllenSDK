@@ -34,6 +34,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 import numpy as np
+import requests
 import simplejson as json
 import math
 import re
@@ -106,10 +107,8 @@ def read_url_get(url):
     Note: if the input is a bare array or literal, for example,
     the output will be of the corresponding type.
     '''
-    response = urllib_request.urlopen(url)
-    json_string = response.read().decode('utf-8')
-
-    return json.loads(json_string)
+    response = requests.get(url)
+    return response.json()
 
 
 def read_url_post(url):
