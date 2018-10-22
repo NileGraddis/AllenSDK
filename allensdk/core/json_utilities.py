@@ -2,7 +2,7 @@
 # license plus a third clause that prohibits redistribution for commercial
 # purposes without further permission.
 #
-# Copyright 2015-2016. Allen Institute. All rights reserved.
+# Copyright 2015-2018. Allen Institute. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -33,23 +33,17 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-import numpy as np
-import requests
-import simplejson as json
 import math
 import re
 import logging
 
-ju_logger = logging.getLogger(__name__)
+import requests
+import numpy as np
+import simplejson as json
+from six.moves.urllib import parse as urlparse
 
-try:
-    import urllib.request as urllib_request
-except ImportError:
-    import urllib2 as urllib_request
-try:
-    from urllib.parse import urlparse
-except ImportError:
-    import urlparse
+
+ju_logger = logging.getLogger(__name__)
 
 
 def read(file_name):
@@ -128,29 +122,14 @@ def read_url_post(url):
     Note: if the input is a bare array or literal, for example,
     the output will be of the corresponding type.
     '''
+
     urlp = urlparse.urlparse(url)
     main_url = urlparse.urlunsplit(
         (urlp.scheme, urlp.netloc, urlp.path, '', ''))
-    data = json.dumps(dict(urlparse.parse_qsl(urlp.query)))
+    data = dict(urlparse.parse_qsl(urlp.query))
 
-    handler = urllib_request.HTTPHandler()
-    opener = urllib_request.build_opener(handler)
-
-    request = urllib_request.Request(main_url, data)
-    request.add_header("Content-Type", 'application/json')
-    request.get_method = lambda: 'POST'
-
-    try:
-        response = opener.open(request)
-    except Exception as e:
-        response = e
-
-    if response.code == 200:
-        json_string = response.read()
-    else:
-        json_string = response.read()
-
-    return json.loads(json_string)
+    response = requests.post(main_url, data=data, headers={'Content-Type': 'application/json'})
+    return response.json()
 
 
 def json_handler(obj):
