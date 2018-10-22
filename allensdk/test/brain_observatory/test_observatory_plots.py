@@ -50,7 +50,8 @@ from pkg_resources import resource_filename  # @UnresolvedImport
 
 
 data_file = os.environ.get('TEST_OBSERVATORY_EXPERIMENT_PLOTS_DATA', 'skip')
-
+if data_file == 'default':
+    data_file = resource_filename(__name__, 'test_observatory_plots_data.json')
 
 if data_file == 'skip':
     EXPERIMENT_CONTAINER=None
