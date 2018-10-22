@@ -35,6 +35,7 @@
 #
 import allensdk.core.json_utilities as ju
 import pytest
+import responses
 from mock import patch, MagicMock, call
 import numpy as np
 
@@ -122,3 +123,17 @@ def test_write_list(dict_obj):
   ]
 }"""
     assert s_in == s_out
+
+
+@responses.activate
+@pytest.mark.parametrize('url,json_data', [
+  ['http://brain-map.org/some/data', {'fish': 1, 'fowl': 2}]
+])
+def test_read_url_get(url, json_data):
+
+  with responses.RequestsMock() as rmck:
+    rmck.add(responses.GET, url, json=json_data)
+    response = ju.read_url_get(url)
+    assert response == json_data
+
+  
