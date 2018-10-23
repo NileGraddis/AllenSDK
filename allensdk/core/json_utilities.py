@@ -128,7 +128,7 @@ def read_url_post(url):
         (urlp.scheme, urlp.netloc, urlp.path, '', ''))
     data = dict(urlparse.parse_qsl(urlp.query))
 
-    response = requests.post(main_url, data=data, headers={'Content-Type': 'application/json'})
+    response = requests.post(main_url, json=data, headers={'Content-Type': 'application/json'})
     return response.json()
 
 

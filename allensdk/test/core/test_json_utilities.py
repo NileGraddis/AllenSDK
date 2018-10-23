@@ -38,6 +38,7 @@ import pytest
 import responses
 from mock import patch, MagicMock, call
 import numpy as np
+import json
 
 
 @pytest.fixture
@@ -131,9 +132,24 @@ def test_write_list(dict_obj):
 ])
 def test_read_url_get(url, json_data):
 
-  with responses.RequestsMock() as rmck:
-    rmck.add(responses.GET, url, json=json_data)
-    response = ju.read_url_get(url)
-    assert response == json_data
+    with responses.RequestsMock() as rmck:
+        rmck.add(responses.GET, url, json=json_data)
+        response = ju.read_url_get(url)
+        assert response == json_data
 
-  
+
+@responses.activate
+@pytest.mark.parametrize('url,json_data,post_url,post_data', [
+  ['http://brain-map.org?param=value', {'foo': 'value'}, 'http://brain-map.org', {'param': 'value'}]
+])
+def test_read_url_post(url, json_data, post_url, post_data):
+
+    def request_callback(request):
+        request_body = json.loads(request.body)
+        assert request_body == post_data
+        return (200, {'Content-Type': 'application/json'}, json.dumps(json_data))
+
+    with responses.RequestsMock() as rmck:
+        rmck.add_callback(responses.POST, post_url, callback=request_callback)
+        response = ju.read_url_post(url)
+        assert response == json_data
