@@ -206,8 +206,19 @@ class StaticGratings(StimulusAnalysis):
                     1 - (1 / 120.)))
 
     def _get_response_events(self):
-        # for each cell, find all trials with the same orientation/spatial_freq/phase/cell combo; get averaged num
-        # of spikes, the standard err, and a count of all statistically significant trials.
+        """ Builds a 5D array summarizing spike data for each unit and stimulus condition (a stimulus condition is a 
+        specific permutation of stimulus values). This array (recorded as self._response_events) has dimensions:
+
+        - orientation
+        - spatial frequency (this dimension is one longer than the number of distinct spatial frequencies. This is to account for the blank sweep)
+        - phase
+        - unit
+        - summary statistic. These are:
+          - mean spike count (see mean_sweep_events for details)
+          - standard error of the spike count
+          - count of trials for which the spike count was significantly different from baseline
+        
+        """
         response_events = np.empty((self.number_ori, self.number_sf+1, self.number_phase, self.numbercells, 3))
         for oi, ori in enumerate(self.orivals):
             ori_mask = self.stim_table['Ori'] == ori
